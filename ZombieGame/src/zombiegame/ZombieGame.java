@@ -23,7 +23,7 @@ import javax.swing.JFrame;
  * @author Xavier
  */
 public class ZombieGame extends JFrame implements Runnable {
-
+    private boolean blockedMoviments;
     private ArrayList<Pad> pads;
     private ArrayList<VisibleObject> visibleObjects;
     private Rules rules;
@@ -40,6 +40,7 @@ public class ZombieGame extends JFrame implements Runnable {
     public ZombieGame() {
         super("ZombieGame");
         this.inicioPartida = false;
+        this.blockedMoviments=false;
         this.pads = new ArrayList();
         this.visibleObjects = new ArrayList();
         this.server = new Server(this);
@@ -95,17 +96,49 @@ public class ZombieGame extends JFrame implements Runnable {
 
     public void play() {
         boolean endGame = false;
-
+        this.blockedMoviments=true;
+         iniciarRonda();
+         
         while (!endGame) {
             while (this.score.getReloj() > 0) {
                 sleep(1000);
+                if(getNumberHumans() <1 || knowNumberCoins()<1){
+                    this.score.setReloj(0);
+                }
             }
+            this.blockedMoviments=true;
             cambiarPapeles();
             createCoins();
+            iniciarRonda();
             endGame = this.score.getRonda() == 3;
         }
 
         this.viewer.setState(false);
+    }
+    
+    public int getNumberHumans(){
+        int numberHumans=0;
+        for (int humans = 0; humans < this.visibleObjects.size(); humans++) {
+            if(this.visibleObjects.get(humans) instanceof Human && this.visibleObjects.get(humans).isState()){
+               numberHumans++;
+            }
+        }
+        return numberHumans;
+    }
+    
+    public void iniciarRonda(){
+        if(this.score.getRonda()<3){
+        this.viewer.setReloj(3);
+        this.viewer.setMostrarCartelito(true);
+        
+        while(this.viewer.getReloj()>0){
+            sleep(1000);
+            this.viewer.setReloj(this.viewer.getReloj()-1);
+            
+        }
+        this.viewer.setMostrarCartelito(false);
+        this.blockedMoviments=false;
+        }
     }
 
     public void endGame() {
@@ -124,6 +157,15 @@ public class ZombieGame extends JFrame implements Runnable {
     public Viewer getViewer() {
         return viewer;
     }
+
+    public boolean isBlockedMoviments() {
+        return blockedMoviments;
+    }
+
+    public void setBlockedMoviments(boolean blockedMoviments) {
+        this.blockedMoviments = blockedMoviments;
+    }
+    
 
     public void eliminateObjects() {
         for (int object = 0; object < this.visibleObjects.size(); object++) {
@@ -161,8 +203,8 @@ public class ZombieGame extends JFrame implements Runnable {
 
     public void changeHuman(VisibleObject model, int pos) {
         Human m = (Human) model;
-        Zombie z = new Zombie(217, 441, true, this, m.getId(), m.getWidth(), m.getHeight(), m.getVelocityX(), m.getVelocityY(), 1, m.getAnimation(), m.getName());
-        z.setMoviments(m.getMoviments());
+        m.cleanLastMoviment();
+        Zombie z = new Zombie(217, 441, true, this, m.getId(), m.getWidth(), m.getHeight(), 0, 0, 1, m.getAnimation(), m.getName());
         (new Thread(z)).start();
         m.setState(false);
         this.visibleObjects.remove(m);
@@ -173,12 +215,11 @@ public class ZombieGame extends JFrame implements Runnable {
 
     public void checkPadDisconnected(String idPad) {
         Pad p = searchPad(idPad);
-        Controlled c = searchControlled(idPad);
+        Controlled c = null;
         double timeOut = System.nanoTime() / 1000000000;
 
         if (p != null) {
             while (!p.isConnected()) {
-                System.out.println(p.isConnected());
                 c = searchControlled(idPad);
                 if (System.nanoTime() / 1000000000 - timeOut > 17) {
                     this.looby.removePlayer(idPad);
@@ -194,8 +235,8 @@ public class ZombieGame extends JFrame implements Runnable {
 
     public void changeZombie(VisibleObject model, int pos) {
         Zombie z = (Zombie) model;
-        Human m = new Human(792, 413, true, this, z.getId(), z.getWidth(), z.getHeight(), z.getVelocityX(), z.getVelocityY(), 1, z.getAnimation(), z.getName());
-        m.setMoviments(z.getMoviments());
+        z.cleanLastMoviment();
+        Human m = new Human(792, 413, true, this, z.getId(), z.getWidth(), z.getHeight(), 0, 0, 1, z.getAnimation(), z.getName());
         (new Thread(m)).start();
         z.setState(false);
         this.visibleObjects.remove(z);
@@ -205,12 +246,36 @@ public class ZombieGame extends JFrame implements Runnable {
     }
 
     public void createCoins() {
-        int[][] pos = {{157, 445}, {331, 357}, {276, 568}, {488, 90}};
-
-        for (int coins = 0; coins < 4; coins++) {
-            if (!checkCoins(pos[coins][0], pos[coins][1])) {
-                this.visibleObjects.add(new Coin(pos[coins][0], pos[coins][1], true, this, "coinGuapa,", 0, 21, 21));
+        removeCoins();
+        Random r=new Random();
+        int[][] pos = {{157, 445}, {331, 357}, {276, 568}, {488, 90},{524,408},{771,167},{784,576},{901,524},{530,238},{22,132},{226,135},{398,139},{747,81},{851,167}};
+        
+        for (int coins = 0; coins < 10 && knowNumberCoins()<10; ) {
+            int choosedCoin=r.nextInt(12);
+            if (!checkCoins(pos[choosedCoin][0], pos[choosedCoin][1])) {
+                this.visibleObjects.add(new Coin(pos[choosedCoin][0], pos[choosedCoin][1], true, this, "coinGuapa,", 0, 21, 21));
+                coins++;
             }
+        }
+    }
+    
+    public int knowNumberCoins(){
+        int number=0;
+        for (int coins = 0; coins < this.visibleObjects.size(); coins++) {
+          if(this.visibleObjects.get(coins) instanceof Coin){
+              number++;
+          }
+          }
+        return number;
+    }
+    
+    public void removeCoins(){
+        for (int coins = 0; coins < this.visibleObjects.size(); coins++) {
+          if(this.visibleObjects.get(coins) instanceof Coin){
+              Coin c=(Coin)this.visibleObjects.get(coins);
+              c.setState(false);
+              this.visibleObjects.remove(c);
+          }  
         }
     }
 
@@ -448,7 +513,7 @@ public class ZombieGame extends JFrame implements Runnable {
     public void moveControlled(String id, String move) {
         Controlled character = searchControlled(id);
 
-        if (character != null) {
+        if (character != null && !this.blockedMoviments) {
             if (move.equals("ability")) {
                 if (!character.isBlockedAbility()) {
                     character.ability();

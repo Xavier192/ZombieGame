@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import org.w3c.dom.css.Rect;
 
 /**
  *
@@ -38,6 +39,8 @@ public class Viewer extends Canvas implements Runnable {
     private double time;
     private double target;
     private boolean state;
+    private boolean mostrarCartelito;
+    private int reloj;
     
     public Viewer(ZombieGame zombieGameViewer){
         this.zombieGameViewer=zombieGameViewer;
@@ -46,6 +49,8 @@ public class Viewer extends Canvas implements Runnable {
         this.target = 1000000000 / fps;
         this.time = System.nanoTime();
         this.state=true;
+        this.mostrarCartelito = true;
+        this.reloj=3;
         readBackgroundImage();
     }
     
@@ -103,12 +108,14 @@ public class Viewer extends Canvas implements Runnable {
         gBufer = (Graphics2D) bs.getDrawGraphics();
         this.renderImage = new BufferedImage(960,640, TYPE_3BYTE_BGR);
         g = (Graphics2D) this.renderImage.getGraphics();
-      
+        
         paintBackground(g);
+        
         printScoreBoard(g);
         paintObjects(g);
+        cartelito(g);
         paintFrame(gBufer,bs);
-       
+        
     }
     public void paintFrame(Graphics2D gBufer, BufferStrategy bs){
         gBufer.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -126,6 +133,7 @@ public class Viewer extends Canvas implements Runnable {
         g.drawString("Port: "+this.zombieGameViewer.getServer().getPort(), 185, 38);
         g.drawString("FPS: "+this.fps, 285, 38);
         g.drawRoundRect(470, 13, 53, 53, 15, 45);
+        
         if(this.zombieGameViewer.getScore().getReloj()>=10){
             g.drawString(Integer.toString(this.zombieGameViewer.getScore().getReloj()), 487, 42);
         }
@@ -146,6 +154,36 @@ public class Viewer extends Canvas implements Runnable {
     public void setState(boolean state) {
         this.state = state;
     }
+    
+    public void cartelito(Graphics2D g){
+        Font arial = new Font("Arial", Font.BOLD, 46);
+        g.setFont(arial);
+        if(this.mostrarCartelito){
+            Color c = new Color(232,232,232,200);
+            g.setColor(c);
+            g.fillRect(0, 0, 997, 701);  
+            g.setColor(new Color(255,255,255));
+            g.drawString( "Round "+this.zombieGameViewer.getScore().getRonda(),385 ,300 );
+            g.drawString(""+this.reloj,465,350);
+        }      
+    }
+
+    public boolean isMostrarCartelito() {
+        return mostrarCartelito;
+    }
+
+    public void setMostrarCartelito(boolean mostrarCartelito) {
+        this.mostrarCartelito = mostrarCartelito;
+    }
+
+    public int getReloj() {
+        return reloj;
+    }
+
+    public void setReloj(int reloj) {
+        this.reloj = reloj;
+    }
+    
     
     
 }

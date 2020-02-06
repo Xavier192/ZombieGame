@@ -54,7 +54,8 @@ public class Coin extends Static {
     
      @Override
     public void render(Graphics2D g){
-        Image frame=getFrames()[getSelectObject()][this.actualFrame];
+        if(isState()){
+            Image frame=getFrames()[getSelectObject()][this.actualFrame];
         
         if(this.frameCounter%10==0){
             if(getSelectObject()==0){
@@ -67,6 +68,7 @@ public class Coin extends Static {
         }   
         g.drawImage(getFrames()[getSelectObject()][this.actualFrame], (int)getX(), (int)getY(),frame.getWidth(null),frame.getHeight(null),null);
         this.frameCounter++;
+        }
     }
 
     public int getFrameCounter() {
